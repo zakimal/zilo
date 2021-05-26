@@ -1,13 +1,21 @@
+#include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
 
+struct termios orig_termios; // original terminal state
+
+void disableRawMode()
+{
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
 void enableRawMode()
 {
-    struct termios raw;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    atexit(disableRawMode); // register disableRawMode() to be called on exit
 
-    tcgetattr(STDIN_FILENO, &raw);
-
-    raw.c_lflag &= ~(ECHO); // Turn off ECHO feature
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ECHO); // turn off ECHO feature
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
