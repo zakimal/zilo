@@ -17,6 +17,7 @@ void enableRawMode()
     atexit(disableRawMode); // register disableRawMode() to be called on exit
 
     struct termios raw = orig_termios;
+    raw.c_iflag &= ~(IXON);                 // turn off XOFF, XON
     raw.c_lflag &= ~(ECHO | ICANON | ISIG); // turn off ECHO, CANONICAL feature, ignoring signals
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
