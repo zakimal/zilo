@@ -18,6 +18,7 @@ void enableRawMode()
 
     struct termios raw = orig_termios;
     raw.c_iflag &= ~(ICRNL | IXON);                  // turn off XOFF, XON, do not translating CR to NL
+    raw.c_oflag &= ~(OPOST);                         // turn off output processing feature
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // turn off ECHO, CANONICAL feature, ignoring signals
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
@@ -41,11 +42,11 @@ int main()
             //   - Backspace: 127
             //   - Ctrl + a: 1
             //   - Ctrl + b: 2
-            printf("%d\n", c);
+            printf("%d\r\n", c);
         }
         else
         {
-            printf("%d ('%c')\n", c, c);
+            printf("%d ('%c')\r\n", c, c);
         }
     }
     return 0;
