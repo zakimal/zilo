@@ -38,7 +38,7 @@
 *.x86_64
 *.hex
 
-zlio
+zilo
 
 # Debug files
 *.dSYM/
