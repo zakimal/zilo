@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -26,6 +28,24 @@ int main()
 
     char c;
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
-        ;
+    {
+        if (iscntrl(c))
+        {
+            // ASCII codes 0–31, 127 are control characters (, so nonprintable).
+            // examples:
+            //   - Up: 27, 91('['), 65
+            //   - Right: 27, 91('['), 67
+            //   - Escape: 27
+            //   - Enter: 10
+            //   - Backspace: 127
+            //   - Ctrl + a: 1
+            //   - Ctrl + b: 2
+            printf("%d\n", c);
+        }
+        else
+        {
+            printf("%d ('%c')\n", c, c);
+        }
+    }
     return 0;
 }
