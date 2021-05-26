@@ -17,9 +17,10 @@ void enableRawMode()
     atexit(disableRawMode); // register disableRawMode() to be called on exit
 
     struct termios raw = orig_termios;
-    raw.c_iflag &= ~(ICRNL | IXON);                  // turn off XOFF, XON, do not translating CR to NL
-    raw.c_oflag &= ~(OPOST);                         // turn off output processing feature
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // turn off ECHO, CANONICAL feature, ignoring signals
+    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON); // turn off XOFF, XON, do not translating CR to NL, ignoring SIGINT
+    raw.c_oflag &= ~(OPOST);                                  // turn off output processing feature
+    raw.c_cflag |= (CS8);                                     // set character size to 8 bits per byte
+    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);          // turn off ECHO, CANONICAL feature, ignoring signals
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
