@@ -21,6 +21,8 @@ void enableRawMode()
     raw.c_oflag &= ~(OPOST);                                  // turn off output processing feature
     raw.c_cflag |= (CS8);                                     // set character size to 8 bits per byte
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);          // turn off ECHO, CANONICAL feature, ignoring signals
+    raw.c_cc[VMIN] = 0;                                       // set the minimum number of bytes of input needed
+    raw.c_cc[VTIME] = 1;                                      // set the maximum amount of time to wait in a unit of 100 milisec
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
@@ -29,9 +31,11 @@ int main()
 {
     enableRawMode();
 
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
+    while (1)
     {
+        char c = '\0';
+        read(STDIN_FILENO, &c, 1);
+
         if (iscntrl(c))
         {
             // ASCII codes 0–31, 127 are control characters (, so nonprintable).
@@ -49,6 +53,9 @@ int main()
         {
             printf("%d ('%c')\r\n", c, c);
         }
+
+        if (c == 'q')
+            break;
     }
     return 0;
 }
