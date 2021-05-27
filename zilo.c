@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -119,35 +120,69 @@ int getWindowSize(int *rows, int *cols)
     }
 }
 
+/*** append buffer ***/
+
+struct abuf
+{
+    char *b;
+    int len;
+};
+
+#define ABUF_INIT \
+    {             \
+        NULL, 0   \
+    }
+
+void abAppend(struct abuf *ab, const char *s, int len)
+{
+    char *new = realloc(ab->b, ab->len + len);
+
+    if (new == NULL)
+        return;
+    memcpy(&new[ab->len], s, len);
+    ab->b = new;
+    ab->len += len;
+}
+
+void abFree(struct abuf *ab)
+{
+    free(ab->b);
+}
+
 /*** output ***/
 
-void editorDrawRows()
+void editorDrawRows(struct abuf *ab)
 {
     int y;
     for (y = 0; y < E.screenrows; y++)
     {
-        write(STDOUT_FILENO, "~", 1);
+        abAppend(ab, "~", 1);
 
         if (y < E.screenrows - 1)
         {
-            write(STDOUT_FILENO, "\r\n", 2);
+            abAppend(ab, "\r\n", 2);
         }
     }
 }
 
 void editorRefreshScreen()
 {
+    struct abuf ab = ABUF_INIT;
+
     // escape sequence
     // - \x1b = escape
     // - <esc>[1J   = clear the screen up to where the cursor is
     // - <esc>[0J   = clear the screen from the cursor up to the end of the screen
     // - <esc>[1;1H = set the cursor at the top-left of the screen
-    write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[2J", 4);
+    abAppend(&ab, "\x1b[H", 3);
 
-    editorDrawRows();
+    editorDrawRows(&ab);
 
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[H", 3);
+
+    write(STDOUT_FILENO, ab.b, ab.len);
+    abFree(&ab);
 }
 
 /*** input ***/
