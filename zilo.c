@@ -64,6 +64,15 @@ char editorReadKey()
 
 /*** output ***/
 
+void editorDrawRows()
+{
+    int y;
+    for (y = 0; y < 24; y++)
+    {
+        write(STDOUT_FILENO, "~\r\n", 3);
+    }
+}
+
 void editorRefreshScreen()
 {
     // escape sequence
@@ -72,6 +81,10 @@ void editorRefreshScreen()
     // - <esc>[0J   = clear the screen from the cursor up to the end of the screen
     // - <esc>[1;1H = set the cursor at the left-top of the screen
     write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
+    editorDrawRows();
+
     write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
