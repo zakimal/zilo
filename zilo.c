@@ -174,12 +174,14 @@ void editorRefreshScreen()
     // - <esc>[1J   = clear the screen up to where the cursor is
     // - <esc>[0J   = clear the screen from the cursor up to the end of the screen
     // - <esc>[1;1H = set the cursor at the top-left of the screen
+    abAppend(&ab, "\x1b[?25l", 6);
     abAppend(&ab, "\x1b[2J", 4);
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
 
     abAppend(&ab, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[?25h", 6);
 
     write(STDOUT_FILENO, ab.b, ab.len);
     abFree(&ab);
