@@ -158,6 +158,7 @@ void editorDrawRows(struct abuf *ab)
     {
         abAppend(ab, "~", 1);
 
+        abAppend(ab, "\x1b[K", 3);
         if (y < E.screenrows - 1)
         {
             abAppend(ab, "\r\n", 2);
@@ -171,11 +172,13 @@ void editorRefreshScreen()
 
     // escape sequence
     // - \x1b = escape
-    // - <esc>[1J   = clear the screen up to where the cursor is
     // - <esc>[0J   = clear the screen from the cursor up to the end of the screen
+    // - <esc>[1J   = clear the screen up to where the cursor is
+    // - <esc>[0K   = clear the right part of the current line from the cursor
+    // - <esc>[1K   = clear the left part of the current line from the cursor
+    // - <esc>[2K   = clear the whole line
     // - <esc>[1;1H = set the cursor at the top-left of the screen
     abAppend(&ab, "\x1b[?25l", 6);
-    abAppend(&ab, "\x1b[2J", 4);
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
