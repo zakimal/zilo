@@ -70,6 +70,32 @@ char editorReadKey()
     return c;
 }
 
+int getCursorPosition(int *rows, int *cols)
+{
+    char buf[32];
+    unsigned int i = 0;
+
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+
+    while (i < sizeof(buf) - 1)
+    {
+        if (read(STDIN_FILENO, &buf[i], 1) != 1)
+            break;
+        if (buf[i] == 'R')
+            break;
+        i++;
+    }
+    buf[i] = '\0';
+
+    if (buf[0] != '\x1b' || buf[1] != '[')
+        return -1;
+    if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
+        return -1;
+
+    return 0;
+}
+
 int getWindowSize(int *rows, int *cols)
 {
     struct winsize ws;
@@ -77,7 +103,12 @@ int getWindowSize(int *rows, int *cols)
     // TIOCGWINSZ stands for Terminal Input/Output Control Get WINdow SiZe
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
     {
-        return -1;
+        // "\x1b[999C\x1b[999B": move cursor right by 999 and down by 999
+        // note: we don’t use the <esc>[999;999H command is because the documentation of VT100 doesn’t specify what happens when you try to move the cursor off-screen.
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+            return -1;
+        editorReadKey();
+        return getCursorPosition(rows, cols);
     }
     else
     {
