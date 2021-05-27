@@ -13,7 +13,12 @@
 
 /*** data ***/
 
-struct termios orig_termios; // original terminal state
+struct editorConfig
+{
+    struct termios orig_termios; // original terminal state
+};
+
+struct editorConfig E;
 
 /*** terminal ***/
 
@@ -28,17 +33,17 @@ void die(const char *s)
 
 void disableRawMode()
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1)
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1)
         die("tcsetattr");
 }
 
 void enableRawMode()
 {
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
+    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1)
         die("tcgetattr");
     atexit(disableRawMode); // register disableRawMode() to be called on exit
 
-    struct termios raw = orig_termios;
+    struct termios raw = E.orig_termios;
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON); // turn off XOFF, XON, do not translating CR to NL, ignoring SIGINT
     raw.c_oflag &= ~(OPOST);                                  // turn off output processing feature
     raw.c_cflag |= (CS8);                                     // set character size to 8 bits per byte
