@@ -65,9 +65,11 @@ void editorRefreshScreen()
 {
     // escape sequence
     // - \x1b = escape
-    // - <esc>[1J = clear the screen up to where the cursor is
-    // - <esc>[0J = clear the screen from the cursor up to the end of the screen
+    // - <esc>[1J   = clear the screen up to where the cursor is
+    // - <esc>[0J   = clear the screen from the cursor up to the end of the screen
+    // - <esc>[1;1H = set the cursor at the left-top of the screen
     write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
 /*** input ***/
