@@ -59,6 +59,17 @@ char editorReadKey()
     return c;
 }
 
+/*** output ***/
+
+void editorRefreshScreen()
+{
+    // escape sequence
+    // - \x1b = escape
+    // - <esc>[1J = clear the screen up to where the cursor is
+    // - <esc>[0J = clear the screen from the cursor up to the end of the screen
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
 /*** input ***/
 
 void editorProcessKeypress()
@@ -81,6 +92,7 @@ int main()
 
     while (1)
     {
+        editorRefreshScreen();
         editorProcessKeypress();
     }
     return 0;
