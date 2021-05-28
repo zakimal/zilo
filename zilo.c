@@ -1,11 +1,16 @@
 /*** includes ***/
 
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -30,11 +35,19 @@ enum editorKey
 
 /*** data ***/
 
+typedef struct erow // editor row
+{
+    int size;
+    char *chars;
+} erow;
+
 struct editorConfig
 {
     int cx, cy; // cursor position
     int screenrows;
     int screencols;
+    int numrows;
+    erow row;
     struct termios orig_termios; // original terminal state
 };
 
@@ -207,6 +220,36 @@ int getWindowSize(int *rows, int *cols)
     }
 }
 
+/*** file i/o ***/
+
+void editorOpen(char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    if (!fp)
+        die("fopen");
+
+    char *line = NULL;
+    size_t linecap = 0;
+    ssize_t linelen;
+    linelen = getline(&line, &linecap, fp);
+
+    if (linelen != -1)
+    {
+        while (0 < linelen && (line[linelen - 1] == '\n' ||
+                               line[linelen - 1] == '\r'))
+            linelen--;
+
+        E.row.size = linelen;
+        E.row.chars = malloc(linelen + 1);
+        memcpy(E.row.chars, line, linelen);
+        E.row.chars[linelen] = '\0';
+        E.numrows = 1;
+    }
+
+    free(line);
+    fclose(fp);
+}
+
 /*** append buffer ***/
 
 struct abuf
@@ -243,27 +286,37 @@ void editorDrawRows(struct abuf *ab)
     int y;
     for (y = 0; y < E.screenrows; y++)
     {
-        if (y == E.screenrows / 3)
+        if (E.numrows <= y)
         {
-            char welcome[80];
-            int welcomelen = snprintf(welcome, sizeof(welcome), "Zilo editor -- version %s", ZILO_VERSION);
-            if (E.screencols < welcomelen)
-                welcomelen = E.screencols;
+            if (E.numrows == 0 && y == E.screenrows / 3)
+            {
+                char welcome[80];
+                int welcomelen = snprintf(welcome, sizeof(welcome), "Zilo editor -- version %s", ZILO_VERSION);
+                if (E.screencols < welcomelen)
+                    welcomelen = E.screencols;
 
-            // centering welcome message
-            int padding = (E.screencols - welcomelen) / 2;
-            if (padding)
+                // centering welcome message
+                int padding = (E.screencols - welcomelen) / 2;
+                if (padding)
+                {
+                    abAppend(ab, "~", 1);
+                    padding--;
+                }
+                while (padding--)
+                    abAppend(ab, " ", 1);
+                abAppend(ab, welcome, welcomelen);
+            }
+            else
             {
                 abAppend(ab, "~", 1);
-                padding--;
             }
-            while (padding--)
-                abAppend(ab, " ", 1);
-            abAppend(ab, welcome, welcomelen);
         }
         else
         {
-            abAppend(ab, "~", 1);
+            int len = E.row.size;
+            if (E.screencols < len)
+                len = E.screencols;
+            abAppend(ab, E.row.chars, len);
         }
 
         abAppend(ab, "\x1b[K", 3);
@@ -369,16 +422,22 @@ void initEditor()
 {
     E.cx = 0;
     E.cy = 0;
+    E.numrows = 0;
 
     if (getWindowSize(&E.screenrows, &E.screencols) == -1)
         die("getWindowSize");
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     enableRawMode();
 
     initEditor();
+
+    if (2 <= argc)
+    {
+        editorOpen(argv[1]);
+    }
 
     while (1)
     {
