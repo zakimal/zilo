@@ -42,6 +42,7 @@ enum editorKey
 enum editorHighlight
 {
     HL_NORMAL = 0,
+    HL_COMMENT,
     HL_STRING,
     HL_NUMBER,
     HL_MATCH
@@ -56,7 +57,8 @@ struct editorSyntax
 {
     char *filetype;
     char **filematch; // array of strings, each string contains a pattern to match a filename against
-    int flags;        // whether to highlight it (numbers of strings)
+    char *singleline_comment_start;
+    int flags; // whether to highlight it (numbers of strings)
 };
 
 typedef struct erow // editor row
@@ -97,6 +99,7 @@ struct editorSyntax HLDB[] // HighLight DataBase
         {
             "c",                                        // filetype
             C_HL_extentions,                            // filematch
+            "//",                                       // singleline_comment_start
             HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS // flags
         },
 };
@@ -291,6 +294,9 @@ void editorUpdateSyntax(erow *row)
     if (E.syntax == NULL)
         return;
 
+    char *scs = E.syntax->singleline_comment_start;
+    int scs_len = scs ? strlen(scs) : 0;
+
     int prev_sep = 1;
     int in_string = 0;
 
@@ -299,6 +305,15 @@ void editorUpdateSyntax(erow *row)
     {
         char c = row->render[i];
         unsigned char prev_hl = (0 < i) ? row->hl[i - 1] : HL_NORMAL;
+
+        if (scs_len && !in_string)
+        {
+            if (!strncmp(&row->render[i], scs, scs_len))
+            {
+                memset(&row->hl[i], HL_COMMENT, row->rsize - i);
+                break;
+            }
+        }
 
         if (E.syntax->flags & HL_HIGHLIGHT_STRINGS)
         {
@@ -351,6 +366,8 @@ int editorSyntaxToColor(int hl)
 {
     switch (hl)
     {
+    case HL_COMMENT:
+        return 36; // cyan
     case HL_STRING:
         return 35; // magenta
     case HL_NUMBER:
